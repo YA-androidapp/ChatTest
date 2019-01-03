@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Chat test</title>
+</head>
+
+<body>
+    <input type="text" id="roomName" placeholder="Room name">
+    <button id="enter">Enter room</button>
+    <input type="text" id="name" placeholder="My name">
+    <input type="text" id="msg" placeholder="Message">
+    <button id="send">Send</button>
+    <hr>
+    <div id="history"></div>
+
+    <script type="text/javascript" src="crypto-js.js"></script>
+    <script type="text/javascript" src="skyway-latest.js"></script>
+
+    <script type="text/javascript">
+        var Base64 = {
+            encode: function (str) {
+                return btoa(unescape(encodeURIComponent(str)));
+            },
+            decode: function (str) {
+                return decodeURIComponent(escape(atob(str)));
+            }
+        };
+
+        function en(plaintext) {
+            var passphrase = document.getElementById('roomName').value;
+            var utf8_plain = CryptoJS.enc.Utf8.parse(plaintext);
+            return Base64.encode(CryptoJS.AES.encrypt(utf8_plain, passphrase));
+        }
+
+        function de(encryptedtext) {
+            var passphrase = document.getElementById('roomName').value;
+            try {
+                return Base64.decode(CryptoJS.AES.decrypt(encryptedtext, passphrase).toString(
+                    CryptoJS.enc.Utf8));
+            } catch (error) {
+                return '';
+            }
+        }
+    </script>
+    <script type="text/javascript">
+        const peer = new Peer({
+            key: 'f9613972-35ff-4555-a212-ef68d10cdf71', // The API key of Skyway (domain: ya-androidapp.github.io)
+            debug: 3
+        });
+
+        let room = null;
+        var enter = document.getElementById('enter');
+        var history = document.getElementById('history');
+        var msg = document.getElementById('msg');
+        var name = document.getElementById('name');
+        var roomName = document.getElementById('roomName');
+        var send = document.getElementById('send');
+        enter.addEventListener('click', function () {
+            room = peer.joinRoom(roomName.value, {
+                mode: 'sfu'
+            });
+            room.send(en('<i>' + name.value + '</i> entered ' + roomName.value));
+
+            send.addEventListener('click', function () {
+                room.send(en(name.value + ' > ' + msg.value));
+                appendHistory(msg.value);
+            });
+
+            room.on('data', function (data) {
+                appendHistory(de(data.data));
+            });
+        });
+
+        function appendHistory(msg) {
+            var history = document.getElementById('history');
+            history.insertAdjacentHTML('afterbegin', '<p>' + msg + '</p>');
+        }
+    </script>
+</body>
+</body>
+
+</html>
