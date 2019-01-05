@@ -8,8 +8,8 @@
 
 <body>
     <input type="text" id="roomName" placeholder="Room name">
-    <button id="enter">Enter room</button>
     <input type="text" id="name" placeholder="My name">
+    <button id="enter">Enter room</button>
     <input type="text" id="msg" placeholder="Message">
     <button id="send">Send</button>
     <hr>
@@ -37,8 +37,8 @@
         function de(encryptedtext) {
             var passphrase = document.getElementById('roomName').value;
             try {
-                return Base64.decode(CryptoJS.AES.decrypt(encryptedtext, passphrase).toString(
-                    CryptoJS.enc.Utf8));
+                return CryptoJS.AES.decrypt(Base64.decode(encryptedtext), passphrase).toString(
+                    CryptoJS.enc.Utf8);
             } catch (error) {
                 return '';
             }
@@ -51,34 +51,57 @@
         });
 
         let room = null;
+        peer.on('open', id => {
+            appendHistory('Successfully connected to signaling server.');
+        });
+
         var enter = document.getElementById('enter');
-        var history = document.getElementById('history');
-        var msg = document.getElementById('msg');
-        var name = document.getElementById('name');
-        var roomName = document.getElementById('roomName');
-        var send = document.getElementById('send');
         enter.addEventListener('click', function () {
+            enter.disabled = true;
+            var name = document.getElementById('name');
+            var roomName = document.getElementById('roomName');
             room = peer.joinRoom(roomName.value, {
                 mode: 'sfu'
             });
-            room.send(en('<i>' + name.value + '</i> entered ' + roomName.value));
 
+            var entered = '<i class="name">' + name.value + '</i> entered ' + roomName.value + '.';
+            appendHistory(entered);
+            room.send(en(entered));
+
+            var send = document.getElementById('send');
             send.addEventListener('click', function () {
-                room.send(en(name.value + ' > ' + msg.value));
-                appendHistory(msg.value);
+                send.disabled = true;
+                var msg = document.getElementById('msg');
+                var sent = '<i class="name">' + name.value + '</i> > <span class="message">' + msg.value +
+                    '</span>';
+                room.send(en(sent));
+                appendHistory(sent);
+                send.disabled = false;
             });
 
             room.on('data', function (data) {
-                appendHistory(de(data.data));
+                var received = de(data.data);
+                appendHistory(received);
             });
+
+            enter.disabled = false;
         });
 
         function appendHistory(msg) {
             var history = document.getElementById('history');
             history.insertAdjacentHTML('afterbegin', '<p>' + msg + '</p>');
         }
+
+        window.onload = function () {
+            var random = 1000 + Math.floor(Math.random() * 1000);
+            var roomName = document.getElementById('roomName');
+            roomName.value = random;
+
+            var random = Math.floor(Math.random() * 100);
+            var name = document.getElementById('name');
+            name.value = random;
+        }
     </script>
-</body>
 </body>
 
 </html>
